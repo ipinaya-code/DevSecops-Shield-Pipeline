@@ -1,0 +1,10 @@
+services:
+  web:
+    build:
+      context: ./app
+    ports:
+      - "8080:80"
+    environment:
+      - TZ=America/La_Paz
+    volumes:
+      - ./app/data:/app/data

@@ -1,0 +1,9 @@
+/app/vendor/
+/app/data/*.sqlite
+/app/data/*.sqlite-journal
+/reports/*
+!/reports/.gitkeep
+.env
+.env.local
+.DS_Store
+Thumbs.db

@@ -1,0 +1,13 @@
+{
+  "name": "devsecops/shield-pipeline-app",
+  "description": "Aplicación web de laboratorio para DevSecOps Shield Pipeline",
+  "type": "project",
+  "require": {
+    "php": ">=8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
+}
