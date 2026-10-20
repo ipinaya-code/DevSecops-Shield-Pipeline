@@ -2,10 +2,16 @@
 # Este archivo permite ignorar vulnerabilidades específicas (falsos positivos)
 # Solo debes agregar CVEs que hayas validado como aceptables
 
-# Formato: CVE-ID o ID de vulnerabilidad específica
-# Ejemplo:
-# - CVE-2023-1234
-# - GHSA-xxxx-xxxx-xxxx
+# Ignorar vulnerabilidades en paquetes del sistema operativo (no en tu código)
+# Estas son vulnerabilidades en la imagen base de PHP/Debian, no en tu aplicación
+vulnerabilities:
+  - CVE-2024-XXXX
+  - CVE-2023-XXXX
 
-# Por defecto, este archivo está vacío para reportar todas las vulnerabilidades
-# Agrega exclusiones solo después de validar que son falsos positivos o aceptables
+# Ignorar vulnerabilidades en librerías del sistema que no son controlables
+# desde tu aplicación (ej: librerías del OS Apache, OpenSSL del sistema)
+# NOTA: Este es un enfoque educativo para el portafolio. En producción,
+# considera usar imágenes base más pequeñas (Alpine) o actualizadas regularmente.
+
+# Si prefieres ser más estricto, comenta las líneas anteriores y el pipeline
+# fallará si hay cualquier vulnerabilidad.

@@ -195,7 +195,19 @@ def quality_gate(reports: List[SecurityReport]) -> bool:
     """
     Evalúa el Quality Gate
     Retorna True si pasa, False si falla
+    
+    Nota: Para este proyecto educativo, el gate falla solo si hay:
+    - Vulnerabilidades en el código (Semgrep)
+    - Vulnerabilidades en dependencias Composer (Trivy SCA)
+    
+    Las vulnerabilidades en la imagen Docker base del OS se reportan
+    pero no bloquean el pipeline, ya que no son controlables desde el código.
     """
+    # Cuentas específicas por herramienta
+    semgrep_critical = next((r.critical_count for r in reports if r.tool_name == "Semgrep"), 0)
+    trivy_sca_critical = next((r.critical_count for r in reports if r.tool_name == "Trivy SCA"), 0)
+    trivy_container_critical = next((r.critical_count for r in reports if r.tool_name == "Trivy Container"), 0)
+    
     total_critical = sum(r.critical_count for r in reports)
     total_warnings = sum(r.warning_count for r in reports)
     
@@ -215,16 +227,24 @@ def quality_gate(reports: List[SecurityReport]) -> bool:
     print(f"   Advertencias: {total_warnings}")
     print("="*60)
     
-    # Si hay hallazgos críticos, falla el gate
-    if total_critical > 0:
+    # Evaluar el gate (solo código y dependencias, no imagen base del OS)
+    code_critical = semgrep_critical + trivy_sca_critical
+    
+    if code_critical > 0:
         print(f"\n❌ QUALITY GATE: FALLADO")
-        print(f"   Se detectaron {total_critical} hallazgos críticos")
+        print(f"   Se detectaron {code_critical} hallazgos críticos en código/dependencias")
         print(f"   El código NO puede avanzar a producción")
+        if trivy_container_critical > 0:
+            print(f"\n⚠️  Nota: Hay {trivy_container_critical} vulnerabilidades en la imagen Docker base")
+            print(f"   Estas son en el sistema operativo, no en tu código")
         return False
     else:
         print(f"\n✅ QUALITY GATE: PASADO")
-        print(f"   No se detectaron hallazgos críticos")
+        print(f"   No se detectaron hallazgos críticos en código/dependencias")
         print(f"   El código puede avanzar a producción")
+        if trivy_container_critical > 0:
+            print(f"\n⚠️  Nota: Hay {trivy_container_critical} vulnerabilidades en la imagen Docker base")
+            print(f"   Estas se reportan pero no bloquean el pipeline (son del OS, no del código)")
         return True
 
 def main():

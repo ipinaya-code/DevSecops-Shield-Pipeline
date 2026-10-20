@@ -90,9 +90,11 @@ def format_alert_message(summary: dict) -> str:
     # Agregar mensaje según el estado
     if gate_passed:
         message += "\n✨ El código puede avanzar a producción"
+        if total_critical > 0:
+            message += "\n⚠️ Nota: Las vulnerabilidades en la imagen Docker base se reportan pero no bloquean el pipeline"
     else:
         message += "\n⛔ El código NO puede avanzar a producción"
-        message += "\n🔧 Por favor revisa y corrige las vulnerabilidades críticas"
+        message += "\n🔧 Por favor revisa y corrige las vulnerabilidades críticas en código/dependencias"
     
     # Agregar URL del workflow
     workflow_url = os.getenv("GITHUB_SERVER_URL", "https://github.com")
