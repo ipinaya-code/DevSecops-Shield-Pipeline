@@ -1,0 +1,10 @@
+# Configuración de Semgrep para el pipeline de seguridad
+# Reglas de seguridad estándar para PHP y OWASP Top 10
+
+# Referencia a reglas de la comunidad Semgrep
+include:
+  - owasp-top-10
+  - php.lang.security
+  - generic.secrets.password
+
+

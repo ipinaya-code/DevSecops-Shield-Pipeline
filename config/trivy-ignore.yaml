@@ -1,0 +1,11 @@
+# Trivy Ignore Configuration
+# Este archivo permite ignorar vulnerabilidades específicas (falsos positivos)
+# Solo debes agregar CVEs que hayas validado como aceptables
+
+# Formato: CVE-ID o ID de vulnerabilidad específica
+# Ejemplo:
+# - CVE-2023-1234
+# - GHSA-xxxx-xxxx-xxxx
+
+# Por defecto, este archivo está vacío para reportar todas las vulnerabilidades
+# Agrega exclusiones solo después de validar que son falsos positivos o aceptables

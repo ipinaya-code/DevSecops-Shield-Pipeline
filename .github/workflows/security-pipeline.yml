@@ -1,0 +1,122 @@
+name: DevSecOps Security Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create reports directory
+        run: |
+          mkdir -p reports
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          pip install semgrep
+          pip install requests
+
+      - name: Install Trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+
+      # SAST - Semgrep
+      - name: Run Semgrep (SAST)
+        run: |
+          semgrep scan \
+            --config=config/semgrep-rules.yml \
+            --json \
+            --output=reports/semgrep-report.json \
+            app/src
+        continue-on-error: true
+
+      # SCA - Trivy para dependencias
+      - name: Run Trivy SCA (Composer dependencies)
+        run: |
+          trivy fs \
+            --skip-dirs=vendor \
+            --format json \
+            --output reports/trivy-sca-report.json \
+            app/
+        continue-on-error: true
+
+      # Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t devsecops-shield-pipeline-web ./app
+
+      # Container Scan - Trivy para la imagen Docker
+      - name: Run Trivy Container Scan
+        run: |
+          trivy image \
+            --format json \
+            --output reports/trivy-container-report.json \
+            devsecops-shield-pipeline-web
+        continue-on-error: true
+
+      # DAST - OWASP ZAP
+      - name: Start application for DAST
+        run: |
+          docker compose up -d
+          sleep 10
+
+      - name: Run OWASP ZAP (DAST)
+        run: |
+          docker run -t \
+            --network host \
+            -w /zap/wrk \
+            -v $(pwd)/reports:/zap/wrk \
+            owasp/zap2docker-stable \
+            zap-baseline.py \
+            -t http://localhost:8080 \
+            -r zap-report.html \
+            -I \
+            -c config/zap-baseline.conf
+        continue-on-error: true
+
+      - name: Stop application
+        run: |
+          docker compose down
+
+      # Convertir reporte ZAP a JSON
+      - name: Convert ZAP report to JSON
+        run: |
+          python scripts/parse_reports.py --convert-zap
+
+      # Quality Gate - Procesar todos los reportes
+      - name: Run Quality Gate
+        run: |
+          python3 scripts/parse_reports.py
+
+      # Alertas - Enviar a Telegram
+      - name: Send Telegram notification
+        if: always()
+        run: |
+          python3 scripts/notify_telegram.py
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      # Upload de reportes como artefactos
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: reports/
+          retention-days: 30
